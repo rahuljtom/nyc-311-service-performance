@@ -27,16 +27,16 @@ def save(fig, name):
 
 def volume_and_backlog():
     vol = pd.read_csv(TABLES / "r03_monthly_volume.csv", parse_dates=["month_start"])
-    back = pd.read_csv(TABLES / "r06_backlog.csv", parse_dates=["month_end"])
+    cohort = pd.read_csv(TABLES / "r06_backlog.csv", parse_dates=["created_month"])
     fig, axes = plt.subplots(1, 2, figsize=(11, 3.8))
     axes[0].bar(vol["month_start"].dt.strftime("%b"), vol["requests"] / 1000, color=BLUE)
     axes[0].set_title("Requests created per month (thousands)")
-    axes[1].plot(back["month_end"].dt.strftime("%b"), back["open_at_month_end"] / 1000, color=GREY, marker="o",
-                 label="open at month end")
-    axes[1].plot(back["month_end"].dt.strftime("%b"), back["open_over_30d"] / 1000, color=RED, marker="o",
-                 label="open longer than 30 days")
-    axes[1].set_title("Open backlog of 2024-created requests (thousands)")
-    axes[1].legend(frameon=False)
+    months = cohort["created_month"].dt.strftime("%b")
+    axes[1].plot(months, cohort["pct_closed_within_30d"], color=BLUE, marker="o", label="closed within 30 days")
+    axes[1].plot(months, 100 - cohort["pct_still_open_at_extract"], color=GREY, marker="o", label="closed by extract date")
+    axes[1].set_ylim(0, 100)
+    axes[1].set_title("Share of each month's requests that closed (%)")
+    axes[1].legend(frameon=False, loc="lower left")
     for ax in axes:
         ax.spines[["top", "right"]].set_visible(False)
     save(fig, "volume_and_backlog.png")

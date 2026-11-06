@@ -1,0 +1,11 @@
+check_name,n,pct_of_raw_rows
+raw_rows,3456770,100.0
+distinct_key_rows,3456770,100.0
+usable_rows,3456770,100.0
+close_before_create,988,0.03
+closed_status_no_close_date,27563,0.8
+close_date_not_closed_status,2990,0.09
+borough_missing_or_unspecified,2638,0.08
+zip_missing_or_malformed,34346,0.99
+no_due_date,3437148,99.43
+still_open,63195,1.83
