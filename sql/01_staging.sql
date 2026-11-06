@@ -43,7 +43,11 @@ select
     t.created_at <= m.snapshot_at - interval 7 day
     and (t.closed_at is null or t.closed_at >= t.created_at) as observable_7d,
     t.closed_at is not null and t.closed_at >= t.created_at
-    and t.closed_at <= t.created_at + interval 7 day as closed_within_7d
+    and t.closed_at <= t.created_at + interval 7 day as closed_within_7d,
+    t.created_at <= m.snapshot_at - interval 30 day
+    and (t.closed_at is null or t.closed_at >= t.created_at) as observable_30d,
+    t.closed_at is not null and t.closed_at >= t.created_at
+    and t.closed_at <= t.created_at + interval 30 day as closed_within_30d
 from requests_typed as t
 cross join meta as m
 where t.created_at is not null and t.agency is not null and t.complaint_type is not null;

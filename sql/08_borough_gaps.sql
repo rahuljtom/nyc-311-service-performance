@@ -1,6 +1,8 @@
 -- For each complaint type, how does each borough's median time to close compare with the citywide median?
 -- Ratio above 1 means slower than the city. Only closed requests, and only cells with at least 200 closed
--- requests in the borough and 2,000 in the city.
+-- requests in the borough and 2,000 in the city. The citywide median uses the same rows (requests with a borough), so the
+-- comparison is like for like. Agency is part of the grain: some complaint types (for example Encampment) are handled by
+-- two agencies with very different response times.
 create or replace table r08_borough_gaps as
 with by_borough as (
     select
@@ -17,12 +19,13 @@ with by_borough as (
 
 citywide as (
     select
+        agency,
         complaint_type,
         count(*) as city_closed,
         quantile_cont(resolution_hours, 0.5) as city_median_hours
     from requests
-    where resolution_hours is not null
-    group by 1
+    where resolution_hours is not null and borough is not null
+    group by 1, 2
     having count(*) >= 2000
 )
 
@@ -34,7 +37,7 @@ select
     round(b.median_hours, 1) as median_hours,
     round(c.city_median_hours, 1) as city_median_hours,
     round(b.median_hours / nullif(c.city_median_hours, 0), 2) as ratio_to_city,
-    rank() over (partition by b.complaint_type order by b.median_hours desc) as slowest_rank
+    rank() over (partition by b.agency, b.complaint_type order by b.median_hours desc) as slowest_rank
 from by_borough as b
-inner join citywide as c on b.complaint_type = c.complaint_type
+inner join citywide as c on b.agency = c.agency and b.complaint_type = c.complaint_type
 order by ratio_to_city desc;
