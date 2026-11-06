@@ -1,7 +1,7 @@
 PY := .venv/bin/python
 YEAR ?= 2024
 
-.PHONY: setup download run test lint charts check
+.PHONY: setup download run test lint charts audit check
 
 setup:
 	python3 -m venv .venv
@@ -15,6 +15,9 @@ run:
 
 charts:
 	$(PY) src/charts.py
+
+audit:
+	$(PY) scripts/audit_headlines.py
 
 test:
 	.venv/bin/pytest -q
