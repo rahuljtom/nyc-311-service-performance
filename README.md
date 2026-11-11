@@ -1,90 +1,105 @@
-# NYC 311 service performance, 2024
+# NYC 311: where should the city put the next unit of housing-repair capacity?
 
-SQL analytics on all 3,456,770 New York City 311 service requests created in 2024. The question: **where is the city slowest to
-close requests, which complaint types and agencies account for most of the slow ones, and did anything get worse during the year?**
+An analysis of all 3,456,770 New York City 311 service requests created in 2024, built in SQL (DuckDB). It starts from messy
+raw data and ends in a decision: **which requests wait longest to be closed, why, and where would effort recover the most.**
 
-Built with DuckDB and plain SQL (11 numbered files, linted with SQLFluff), 15 automated tests, and an independent pandas audit
-that recomputes 20 headline numbers straight from the raw files.
+**[Open the decision page](docs/index.html)** (a single self-contained HTML file: download it or open it from a clone;
+or enable GitHub Pages on the `/docs` folder to host it).
 
-## Recommendation up front
+![The recommendation and headline numbers](docs/img/decision.jpg)
 
-1. **Start with housing maintenance.** 20.1% of requests were not closed within 7 days. The Department of Housing Preservation
-   and Development (HPD) alone accounts for **39.2%** of those slow requests, and five HPD complaint types (unsanitary
-   condition, plumbing, paint/plaster, door/window, water leak) account for **27.8%** of all of them. Ten agency and complaint-type
-   pairs make up 45.1% of slow requests; 27 of 204 make up 80%.
-2. **Do not read "slow" as "failing".** Some types are slow by design: new tree requests (99.7% not closed in 7 days), TLC
-   for-hire vehicle complaints (98.9%) and helicopter noise (97.6%). Judging agencies fairly needs per-type targets, and the
-   data has almost none: only 0.6% of requests carry a due date (one agency, DSNY, has enough to analyse; 44.3% of its dated
-   requests were late).
-3. **No sign of deterioration in 2024.** Between 88% and 92% of every month's requests closed within 30 days, and the share
-   still open at the extract date stayed between 1% and 2.5%, while monthly volume rose 9% from January to December.
-4. **The intake channel is not the lever.** Mobile-app requests closed within 7 days 92.2% of the time against 74.5% for phone,
-   but each channel closes at the rate its own complaint mix predicts (actual minus expected is within a point for the three
-   main channels). The difference comes from what people report on each channel, not from the channel.
-5. **Place matters less than type.** The slowest tenth of ZIP codes have a 35.8% slow rate against 8.9% in the fastest tenth, but
-   they hold only 11.2% of slow requests, against 45.1% for the ten leading complaint types. ZIP rates are not adjusted for
-   complaint mix.
+## The decision
 
-![Volume and closure by month](outputs/charts/volume_and_backlog.png)
+**Fix the process behind the five largest housing-maintenance complaint types** (unsanitary condition, plumbing, paint/plaster,
+door/window, water leak). Do not spend the capacity on borough or ZIP targeting, or on changing how people contact 311.
 
-## Where the slow requests are
+| Evidence | Result |
+|---|---|
+| Where the slow requests are | 19.4% of requests (665,424 of 3,428,219) were not closed within 7 days. The housing agency (HPD) holds **40.8%** of them; those five types alone **29.0%**. Ten agency and complaint-type pairs hold 45.7%; 27 of 204 hold 80%. |
+| What explains slowness | Complaint type alone explains **52%** of whether a request is slow (scored on data not used to fit it). Borough 0.3%, month 0.1%, ZIP 2.7%. Adding borough, channel and month to type lifts it only to 55.9%. |
+| What each option recovers | A one-quarter cut in the slow rate of the five types recovers about **48,200** slow requests with 5 targets. Fixing every borough-and-type cell slower than chance recovers 27,500 but needs 118 targets. The 25 worst ZIP-and-type cells recover 2,600. |
+| Neighbourhood effect | Slow rates in more heat-vulnerable ZIPs differ from what their complaint mix predicts by at most 2.5 points, in both directions, and the gap does not grow with the index. |
+| The long tail | 37% of HPD requests are still open after 7 days, 12% after 30 and 3.6% after 89 (Kaplan-Meier, open requests treated as still waiting). |
 
-![Slow request concentration](outputs/charts/slow_request_pareto.png)
+![How long requests stay open](docs/img/survival.jpg)
 
-| Agency | Requests | Closed within 7 days | Median hours to close | Share of all slow requests |
-|---|---|---|---|---|
-| HPD (housing) | 733,927 | 63.0% | 92.5 | 39.2% |
-| DPR (parks) | 138,406 | 32.3% | 619.3 | 13.5% |
-| DOB (buildings) | 102,817 | 41.9% | 371.5 | 8.6% |
-| DOT (transportation) | 203,886 | 73.3% | 46.2 | 7.9% |
-| DSNY (sanitation) | 306,156 | 87.3% | 30.3 | 5.6% |
+![What each option would recover, and the neighbourhood check](docs/img/options.jpg)
 
-Median hours use closed requests only, so they understate how long open ones take. The NYPD, which handles 1.5 million requests
-(45% of the total), closes a median request in 1.1 hours; its "closed" generally means police responded, not that the underlying
-problem was solved, so closure times are not comparable across agencies.
+## The data had traps
 
-**Borough gaps within an agency and type** (closed requests only, at least 200 per borough, citywide median of at least a day):
-examples of boroughs many times slower than the agency's own citywide median are DOB general construction/plumbing in Staten
-Island (921 hours against 83), DPR maintenance or facility complaints in Queens (3,693 against 483) and DHS encampment
-complaints in the Bronx (287 against 36.5). Full table: `outputs/tables/r08_borough_gaps.csv`.
+311 data looks tidy and is not. Seven problems were found and handled before any number was trusted (`outputs/tables/r18_data_mess.csv`).
+The one that changes the answer: **27,563 requests are marked "Closed" but have no close date**, 27,553 of them from the Department of
+Homeless Services. Counted as open they add 27,563 slow requests (a 4% inflation of the slow total) and make DHS's slow rate read
+3.8 times too high. They are treated as unknown and left out of every closure measure. The first version of this project got this wrong;
+it was found while checking which agency really looked worst, and is now covered by a test.
+
+Others: 988 close dates earlier than creation dates (excluded, never repaired), 2,638 "Unspecified" boroughs and 34,346 malformed
+ZIPs (set to empty, never guessed), 266,984 requests with channel UNKNOWN (kept as its own value), and 35,632 requests genuinely still open
+at the extract date (handled as censored in the survival curves).
 
 ## How it was built
 
 ```
-Socrata API (one query per day) ─► data/raw/*.csv ─► DuckDB: stage as text, type, de-duplicate
-  ─► quality report ─► 9 analysis queries (window functions, percentiles, cohorts) ─► outputs/tables, outputs/charts
+Socrata API (one query per day) ─► data/raw/*.csv  ┐
+NYC Health Dept heat index by ZIP ─► data/reference ┴► DuckDB: stage as text, type, de-duplicate
+  ─► data-quality catalogue ─► 18 numbered SQL files ─► outputs/tables ─► docs/index.html (the decision page)
 ```
 
 | Practice | Where |
 |---|---|
-| Every exclusion counted before analysis | `sql/02_data_quality.sql`, `outputs/tables/r02_data_quality.csv` |
+| Every exclusion counted before analysis, with what it would have changed | `sql/02_data_quality.sql`, `sql/18_data_mess.sql` |
+| Survival analysis with right-censoring (Kaplan-Meier in SQL: window functions over at-risk and event counts) | `sql/13_survival.sql` |
+| Out-of-sample variance decomposition (fit on half the requests, score on the other half) | `sql/14_drivers.sql` |
+| Expected-versus-actual standardisation with 95% margins, joined to a second source by ZIP | `sql/15_vulnerability.sql` |
+| Recoverable-effort sizing with a chance margin so small-cell noise is not counted | `sql/16_recoverable.sql` |
 | Window functions: `LAG`, rolling averages, running share, `RANK`, `NTILE`, percentiles | `sql/03` to `sql/11` |
-| Tests on hand-computed answers, plus regression tests for each mistake found in review | `tests/` (15 tests) |
-| Independent recomputation in pandas from the raw CSVs (20 checks, all pass) | `scripts/audit_headlines.py` |
+| 27 tests on hand-computed answers, with mutation checks and a regression test for each mistake found | `tests/` |
+| Independent recomputation of 29 headline numbers (including the survival curve and variance score) in pandas from the raw CSVs | `scripts/audit_headlines.py` |
 | CI: SQL lint and tests on every push | `.github/workflows/ci.yml` |
 | Choices and definitions written down | `docs/methodology.md`, `docs/data_dictionary.md` |
 
-Reviewing the first real results caught three mistakes in my own queries, all now fixed and tested: a running "backlog" that
-grew only because the file starts empty on 1 January; a borough baseline that mixed two agencies (it showed DHS encampment at
-211 times the city median; the correct figure is 7.9); and a baseline that included requests the borough figures excluded.
+## Other findings
+
+- **Housing dominates, but slow is not failing.** Some types are slow by design: new tree requests (99.7% not closed in 7 days),
+  for-hire vehicle complaints (98.9%), helicopter noise (97.6%). Only 0.6% of requests carry a due date (DSNY: 44.3% of its dated requests
+  were late), so fair per-type targets cannot be tested.
+- **No sign of deterioration in 2024.** 88.7% to 92.9% of each month's requests closed within 30 days; the share still open at the extract
+  date stayed between 0.6% and 1.5%; monthly volume rose 9.3% from January to December.
+- **Intake channel is not the lever.** Mobile-app requests closed within 7 days 94.2% of the time against 74.8% for phone, but each
+  channel closes at the rate its own complaint mix predicts (within 0.2 points for the three main channels).
+- **Borough gaps exist inside a type.** Examples of boroughs many times slower than the agency's own citywide median: DOB general
+  construction/plumbing in Staten Island (921 hours against 83), DPR maintenance or facility complaints in Queens (3,693 against 483),
+  DHS encampment complaints in the Bronx (287 against 36.5). Full table: `outputs/tables/r08_borough_gaps.csv`.
+- **Inside the five housing types** the biggest single slow problems are pests (40,475 slow requests, 64% slow), wall paint/plaster
+  (18,030), doors (15,243), heavy water flow (12,413) and basin/sink plumbing (10,803).
+
+| Agency | Requests | Closed within 7 days | Median hours to close | Share of all slow requests |
+|---|---|---|---|---|
+| HPD (housing) | 733,927 | 63.0% | 92.5 | 40.8% |
+| DPR (parks) | 138,406 | 32.3% | 619.3 | 14.1% |
+| DOB (buildings) | 102,817 | 41.9% | 371.5 | 9.0% |
+| DOT (transportation) | 203,885 | 73.3% | 46.2 | 8.2% |
+| DSNY (sanitation) | 306,147 | 87.3% | 30.3 | 5.8% |
+
+Median hours use closed requests only, so they understate how long open ones take. The NYPD (1.5 million requests, 45% of the total)
+closes a median request in 1.1 hours; its "closed" generally means police responded, not that the underlying problem was solved.
 
 ## Data and quality
 
-- **Source:** NYC Open Data 311 service requests, requests created in 2024, pulled 7 November 2026 (extract date 4 November 2026).
-  The row count matches the API's own count taken before the download (3,456,770).
-- 988 requests (0.03%) have a close date before their creation date and are excluded from durations; 27,563 (0.8%) are marked
-  closed with no close date; 34,346 (1.0%) lack a valid ZIP; 63,195 (1.8%) were still open at the extract.
-- 99.4% of requests have no due date.
+- **Sources:** NYC Open Data 311 Service Requests (`erm2-nwe9`), requests created in 2024, pulled 7 November 2026 (extract date 4 November
+  2026); the row count matches the API's own count taken before the download. NYC Health Department Heat Vulnerability Index by ZIP
+  (`4mhf-duep`, 184 ZIPs), committed in `data/reference/` because it is small.
+- 63,195 requests (1.8%) have no close date: 35,632 genuinely open and 27,563 marked closed (see above). 99.4% have no due date.
 
 ## Limitations
 
-- **One year, one city.** No trend beyond 2024, and no comparison with earlier years.
-- **Closure means different things.** Each agency decides when to close a request; a quick close is not the same as a solved problem.
+- **One year, one city.** No trend beyond 2024; a second year would show whether the same types stay slow.
+- **Closure is an agency decision.** If HPD closes a request only when a landlord reports a fix, 7-day closure measures landlord behaviour
+  and the fix would be enforcement rather than capacity.
 - **7 days is arbitrary.** Used as a common yardstick; types differ legitimately in how long they take.
-- **Requests are not incidents.** 311 volumes reflect who reports and how, not true incidence, and are not scaled by population.
-- **Associations, not causes.** ZIP and channel comparisons are unadjusted or only adjusted for complaint mix.
-- **The dataset changes.** Closed dates keep arriving, so a later pull can differ slightly. The result tables in this repository are
-  from the pull dated above.
+- **Associations, not causes.** The recovered-requests figure for the five types is a scenario (a quarter off the slow rate), not a forecast.
+  The neighbourhood index is a published composite that includes income and race and is used only as a grouping.
+- **The dataset changes.** Closed dates keep arriving, so a later pull can differ slightly. The tables here are from the pull dated above.
 
 ## Reproduce
 
@@ -93,6 +108,7 @@ make setup
 make download   # about an hour; resumable, one file per day
 make run        # build the warehouse and export outputs/tables
 make charts
+make site       # build docs/index.html
 make check      # SQL lint and tests
 make audit      # independent pandas recomputation
 ```
