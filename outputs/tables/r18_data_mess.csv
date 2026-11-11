@@ -1,0 +1,8 @@
+issue,rows_affected,pct_of_requests,handling,if_ignored
+Marked CLOSED but no close date,27563,0.8,Left out of every closure measure (outcome unknown),"Counted as misses they would add 27,563 slow requests, 27,553 of them DHS, whose slow rate would read 3.8 times too high"
+Close date earlier than create date,988,0.03,Duration left empty and request excluded from closure measures; the dates are not guessed,Negative durations would pull medians down
+Close date present but status not CLOSED,2990,0.09,Close date trusted,Little: these requests have a usable close date
+Still open at the extract date (censored),35632,1.03,Counted as not closed in 7- and 30-day measures; survival curves treat them as censored,Dropping them would make every agency look faster than it is
+"Borough ""Unspecified""",2638,0.08,"Set to empty, never guessed from ZIP","Would add a sixth, meaningless borough"
+"ZIP missing or malformed (for example NA, 0000, Unkno)",34346,0.99,Set to empty; kept in all non-ZIP analysis,Would break the ZIP join to the vulnerability index
+Intake channel UNKNOWN,266984,7.72,"Kept as its own value, not imputed",Would silently move requests into ONLINE or PHONE
