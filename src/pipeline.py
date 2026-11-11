@@ -9,14 +9,16 @@ from pathlib import Path
 
 import duckdb
 
-SQL_DIR = Path(__file__).resolve().parent.parent / "sql"
+ROOT = Path(__file__).resolve().parent.parent
+SQL_DIR = ROOT / "sql"
+REF_DIR = ROOT / "data" / "reference"
 RESULT_TABLE_PATTERN = "^r[0-9]{2}_"
 
 
-def build(con, raw_glob):
+def build(con, raw_glob, ref_dir=REF_DIR):
     """Run every numbered SQL file in order against an open DuckDB connection."""
     for path in sorted(SQL_DIR.glob("[0-9][0-9]_*.sql")):
-        con.execute(path.read_text().replace("__RAW_GLOB__", raw_glob))
+        con.execute(path.read_text().replace("__RAW_GLOB__", raw_glob).replace("__REF_DIR__", str(ref_dir)))
 
 
 def result_tables(con):
