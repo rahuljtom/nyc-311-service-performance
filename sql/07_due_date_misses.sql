@@ -7,15 +7,15 @@ select
     count(*) as requests_with_due_date,
     count(*) filter (
         where (r.closed_at is not null and r.closed_at > r.due_at)
-        or (r.closed_at is null and m.snapshot_at > r.due_at)
+        or (r.closed_at is null and not r.close_unknown and m.snapshot_at > r.due_at)
     ) as late,
     round(100.0 * count(*) filter (
         where (r.closed_at is not null and r.closed_at > r.due_at)
-        or (r.closed_at is null and m.snapshot_at > r.due_at)
+        or (r.closed_at is null and not r.close_unknown and m.snapshot_at > r.due_at)
     ) / count(*), 1) as late_pct
 from requests as r
 cross join meta as m
-where r.due_at is not null
+where r.due_at is not null and not r.close_unknown
 group by r.agency
 having count(*) >= 1000
 order by late_pct desc, agency asc;

@@ -13,6 +13,7 @@ select
     try_cast(due_date as timestamp) as due_at,
     upper(trim(agency)) as agency,
     trim(complaint_type) as complaint_type,
+    trim(descriptor) as descriptor,
     case upper(trim(borough))
         when 'BRONX' then 'Bronx'
         when 'BROOKLYN' then 'Brooklyn'
@@ -34,18 +35,24 @@ from requests_typed;
 create or replace table requests as
 select
     t.*,
+    -- Marked CLOSED but no close date: the outcome is unknown, so these are kept out of every closure measure
+    -- (counting them as open would call them misses; counting them as closed would need a date we do not have).
+    (t.status = 'CLOSED' and t.closed_at is null) as close_unknown,
     -- A close date before the create date is a data error: the duration is left NULL, never "fixed".
     case
         when t.closed_at >= t.created_at then date_diff('second', t.created_at, t.closed_at) / 3600.0
     end as resolution_hours,
     -- A request can only be judged on a 7-day target if 7 days have passed since it was created.
-    -- Rows with an impossible close date are excluded from the 7-day measures (neither hit nor miss).
+    -- Rows with an impossible close date, or marked closed without a close date, are excluded from the closure measures
+    -- (neither hit nor miss).
     t.created_at <= m.snapshot_at - interval 7 day
-    and (t.closed_at is null or t.closed_at >= t.created_at) as observable_7d,
+    and (t.closed_at is null or t.closed_at >= t.created_at)
+    and not (t.status = 'CLOSED' and t.closed_at is null) as observable_7d,
     t.closed_at is not null and t.closed_at >= t.created_at
     and t.closed_at <= t.created_at + interval 7 day as closed_within_7d,
     t.created_at <= m.snapshot_at - interval 30 day
-    and (t.closed_at is null or t.closed_at >= t.created_at) as observable_30d,
+    and (t.closed_at is null or t.closed_at >= t.created_at)
+    and not (t.status = 'CLOSED' and t.closed_at is null) as observable_30d,
     t.closed_at is not null and t.closed_at >= t.created_at
     and t.closed_at <= t.created_at + interval 30 day as closed_within_30d
 from requests_typed as t
