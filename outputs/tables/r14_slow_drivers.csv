@@ -1,0 +1,9 @@
+predictors,groups_fitted,pct_of_variation_explained
+Complaint type,201,52.3
+Borough,6,0.3
+Intake channel,5,5.7
+Month created,12,0.1
+ZIP code,323,2.7
+Complaint type + borough,955,53.7
+Type + borough + channel + month,17410,55.9
+Borough + channel + month + ZIP (no type),9912,10.7

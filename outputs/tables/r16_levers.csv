@@ -1,0 +1,6 @@
+lever,targets,recoverable_slow,pct_of_all_slow
+A: borough catch-up (all slower-than-chance borough-type cells),118,27520.0,4.1
+"B: ZIP catch-up, top 25 ZIP-type cells",25,2586.0,0.4
+"B: ZIP catch-up, top 100 ZIP-type cells",100,6900.0,1.0
+"B: ZIP catch-up, every slower-than-chance ZIP-type cell",1308,19549.0,2.9
+"C: type-wide, cut slow rate of top 5 HPD types by 25% (scenario)",5,48223.0,7.2
