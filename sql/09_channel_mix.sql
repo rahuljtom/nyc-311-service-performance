@@ -24,4 +24,4 @@ from requests as r
 inner join type_rate as t on r.agency = t.agency and r.complaint_type = t.complaint_type
 where r.observable_7d
 group by 1
-order by requests desc;
+order by requests desc, channel asc;

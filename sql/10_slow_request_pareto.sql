@@ -13,7 +13,7 @@ with slow as (
 )
 
 select
-    row_number() over (order by slow_requests desc, complaint_type asc) as slow_rank,
+    row_number() over (order by slow_requests desc, complaint_type asc, agency asc) as slow_rank,
     agency,
     complaint_type,
     requests,
@@ -21,7 +21,7 @@ select
     round(100.0 * slow_requests / requests, 1) as slow_rate_pct,
     round(100.0 * slow_requests / sum(slow_requests) over (), 2) as pct_of_all_slow,
     round(
-        100.0 * sum(slow_requests) over (order by slow_requests desc, complaint_type asc rows between unbounded preceding and current row)
+        100.0 * sum(slow_requests) over (order by slow_requests desc, complaint_type asc, agency asc rows between unbounded preceding and current row)
         / sum(slow_requests) over (),
         1
     ) as cumulative_pct_of_slow

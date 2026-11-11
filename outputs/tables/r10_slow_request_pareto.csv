@@ -178,8 +178,8 @@ slow_rank,agency,complaint_type,requests,slow_requests,slow_rate_pct,pct_of_all_
 177,DOB,Executive Inspections,2,1,50.0,0.0,100.0
 178,DOB,Facade Insp Safety Pgm,1,1,100.0,0.0,100.0
 179,DSNY,Incorrect Data,41,1,2.4,0.0,100.0
-180,NYPD,Noise - Commercial,68334,1,0.0,0.0,100.0
-181,3-1-1,Noise - Commercial,1,1,100.0,0.0,100.0
+180,3-1-1,Noise - Commercial,1,1,100.0,0.0,100.0
+181,NYPD,Noise - Commercial,68334,1,0.0,0.0,100.0
 182,DOHMH,Radioactive Material,7,1,14.3,0.0,100.0
 183,NYPD,Bike/Roller/Skate Chronic,4353,0,0.0,0.0,100.0
 184,DOT,Building Condition,4,0,0.0,0.0,100.0

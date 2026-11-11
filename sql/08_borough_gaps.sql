@@ -40,4 +40,4 @@ select
     rank() over (partition by b.agency, b.complaint_type order by b.median_hours desc) as slowest_rank
 from by_borough as b
 inner join citywide as c on b.agency = c.agency and b.complaint_type = c.complaint_type
-order by ratio_to_city desc;
+order by ratio_to_city desc, b.agency asc, b.complaint_type asc, b.borough asc;

@@ -13,4 +13,4 @@ from requests
 where observable_7d
 group by agency
 having count(*) >= 1000
-order by requests desc;
+order by requests desc, agency asc;

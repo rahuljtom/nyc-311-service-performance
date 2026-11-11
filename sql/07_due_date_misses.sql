@@ -18,4 +18,4 @@ cross join meta as m
 where r.due_at is not null
 group by r.agency
 having count(*) >= 1000
-order by late_pct desc;
+order by late_pct desc, agency asc;
